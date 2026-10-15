@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "shared-core": ["../common/index.ts"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    
+  },
+  "include": ["src//*", "../common//*"],
+  "exclude": ["node_modules"]
+}

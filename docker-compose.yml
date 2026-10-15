@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  ledger:
+    build: 
+      context: .
+      dockerfile: ./ledger-service/Dockerfile
+    volumes:
+      - "./common:/app/common"
+      - "./ledger-service/src:/app/src"
+    environment:
+      - DATABASE_URL=postgres://my_ledger_user:my_ledger_password@postgres:5432/ledger_db
+    ports:
+      - "3001:3001"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  wallet:
+    build: 
+      context: .
+      dockerfile: ./wallet-service/Dockerfile
+    volumes:
+      - "./wallet-service/src:/app/src"
+    environment:
+      - DATABASE_URL=postgres://my_wallet_user:my_wallet_password@postgres:5432/my_wallet
+    ports:
+      - "3003:3003"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  orchestrator:
+    build: 
+      context: .
+      dockerfile: ./orchestrator-service/Dockerfile
+    volumes:
+      - "./common:/app/common"
+      - "./orchestrator-service/src:/app/src"
+    environment:
+      - DATABASE_URL=postgres://my_orchestrator:my_orchestrator_password@postgres:5432/orchestrator_db
+      - RABBITMQ_URL=amqp://user:password@rabbitmq-service:5672
+      
+    ports:
+      - "3002:3002"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-service
+    ports:
+      - "5672:5672"   # For your application (AMQP)
+      - "15672:15672" # For the Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-service
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_DB=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+
+  redis:
+    image: redis:alpine
+    container_name: redis-service
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres-data:
