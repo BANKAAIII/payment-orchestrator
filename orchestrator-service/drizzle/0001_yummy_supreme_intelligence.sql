@@ -1,0 +1,1 @@
+ALTER TABLE "routeWorkers" ADD COLUMN "maxWorkers" numeric;

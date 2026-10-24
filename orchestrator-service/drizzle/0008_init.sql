@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD COLUMN "current_routing_key" text DEFAULT 'INITIATED';

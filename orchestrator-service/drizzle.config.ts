@@ -1,4 +1,5 @@
 import type { Config } from 'drizzle-kit';
+
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -7,6 +8,6 @@ export default {
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url:'postgres://my_orchestrator_user:my_orchestrator_password@localhost:5432/my_orchestrator',
   },
 } satisfies Config;

@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { getRabbitMQChannel } from "../config/rabbitmq.js";
-import { clientReqSchema } from "../db/schema.js";
 import { json } from "stream/consumers";
 import { transactionInterface } from "../types/clientRoutes/index.js";
 
