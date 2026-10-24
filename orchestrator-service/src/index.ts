@@ -8,6 +8,8 @@ import { Connection } from 'amqplib'
 import amqp from 'amqplib';
 import transactionRoutes from './routes/brokertestPayment.js'
 import "./routes/testTillProcessing.js"
+import { startOutboxPoller } from './services/outboxPoller.js'
+import { dbRoutes } from './routes/dbRoutes/index.js'
 
 
 type RabbitConnection = amqp.Connection & {
@@ -37,6 +39,7 @@ app.get('/', (c) => {
 }
 
 app.route('/api/test',transactionRoutes);
+app.route('api/test',dbRoutes);
 
 async function main() {
   // 1. Connect to Infrastructure
@@ -51,6 +54,7 @@ async function main() {
   await setupTopology(setupChannel);
   await setupChannel.close();
 
+  startOutboxPoller();
   // 3. Start Workers
   await verifyUpiIdWorker(typedConnection);
   // await startFraudWorker(typedConnection);

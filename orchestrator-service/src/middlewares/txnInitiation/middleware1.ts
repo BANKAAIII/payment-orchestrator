@@ -12,13 +12,17 @@ import axios from "axios"
 // rate limiting ( if possible )
 
 
-const payloadType = z.object({
+export const payloadType = z.object({
     payer_upi_id : z.string(),
     payee_upi_id : z.string(),
     amount:z.number(),
     gateway_id : z.string(),
     idempotency_key : z.string().optional(),
-    idempotency_ttl : z.string().optional()
+    idempotency_ttl : z.preprocess(
+        (val) => (val === "" || val === null || val === undefined ? undefined : val),
+        z.coerce.date().optional()
+    ),
+    payer_client_id : z.string()
 })
 
 export async function payloadVerification(payload:any){
@@ -43,13 +47,14 @@ export async function vpaSyntaxVerification(payload:any): Promise<void>{
 }
 
 export async function vpaDbCheck(payload:any):Promise<void>{
-    const {payer_upi_id , payee_upi_id} = payload.data;
+    const {payer_upi_id , payee_upi_id , payer_client_id} = payload.data;
     const upi_ids : string[] = [payer_upi_id,payee_upi_id];
 
     try{
         // do a database call here
     const response = await axios.post("http://wallet:3003/upiVerification/verifyUpiIds",{
-        "upi_ids":upi_ids
+        "upi_ids":upi_ids,
+        "payer_client_id":payer_client_id
     })
 
     if(!response.data || !response.data.success){
@@ -57,6 +62,7 @@ export async function vpaDbCheck(payload:any):Promise<void>{
     }
     }catch(err:any){
         const errorMessage = err.response?.data?.error || err.message || "Wallet service communication failed";
+        
         throw new Error(errorMessage);
     }
     
@@ -65,7 +71,7 @@ export async function vpaDbCheck(payload:any):Promise<void>{
 }
 
 export async function txnInitMiddleware1( c:any , next: any ){
-
+    console.log("----- Entering middleware 1 -----");
     const startTime = performance.now();
 
     const payload = await c.req.json();
@@ -79,7 +85,7 @@ export async function txnInitMiddleware1( c:any , next: any ){
         console.log("middleware 1 successfully executed")
 
         const totalTime = performance.now() - startTime;
-        console.log("Time taken to complete middleware1 : ",totalTime)
+        console.log("Time taken to complete middleware1",totalTime);
 
         return next();
     } catch (err: any) {

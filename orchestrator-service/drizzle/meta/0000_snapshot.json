@@ -1,68 +1,52 @@
 {
-  "id": "b78eea09-2324-414e-a898-36e84a640323",
+  "id": "81be8dd3-819d-4a7f-b2d5-60456f008db7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.clientReq": {
-      "name": "clientReq",
+    "public.outbox_events": {
+      "name": "outbox_events",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "payerUpiId": {
-          "name": "payerUpiId",
+        "aggregate_id": {
+          "name": "aggregate_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "payeeUpiId": {
-          "name": "payeeUpiId",
+        "outbox_status": {
+          "name": "outbox_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DBCOMPLETE'"
+        },
+        "payload": {
+          "name": "payload",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "amount": {
-          "name": "amount",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0.00'"
-        },
-        "idempotencyKey": {
-          "name": "idempotencyKey",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "transactionId": {
-          "name": "transactionId",
+        "status": {
+          "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'PENDING'"
         },
-        "gatewayId": {
-          "name": "gatewayId",
-          "type": "text",
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": true
-        },
-        "clientId": {
-          "name": "clientId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "orchestratorId": {
-          "name": "orchestratorId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -73,8 +57,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.routingKeyWorkers": {
-      "name": "routingKeyWorkers",
+    "public.routeWorkers": {
+      "name": "routeWorkers",
       "schema": "",
       "columns": {
         "id": {
@@ -119,12 +103,26 @@
           "notNull": false,
           "default": "'1'"
         },
+        "workerNumber": {
+          "name": "workerNumber",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "totalWorkersRetries": {
           "name": "totalWorkersRetries",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
+        },
+        "transaction_status": {
+          "name": "transaction_status",
+          "type": "transaction_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'PENDING'"
         },
         "redis_log_key": {
           "name": "redis_log_key",
@@ -160,9 +158,140 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.transactions": {
+      "name": "transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "payer_upi_id": {
+          "name": "payer_upi_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payee_upi_id": {
+          "name": "payee_upi_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0.00'"
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_ttl": {
+          "name": "idempotency_ttl",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transaction_id": {
+          "name": "transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gateway_id": {
+          "name": "gateway_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_status": {
+          "name": "transaction_status",
+          "type": "transaction_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'PENDING'"
+        },
+        "orchestrator_id": {
+          "name": "orchestrator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'hardcodeFnEditAtScale'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'1'"
+        },
+        "workerRedis": {
+          "name": "workerRedis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "startTimestamp": {
+          "name": "startTimestamp",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "endTimestamp": {
+          "name": "endTimestamp",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "transactions_idempotency_key_unique": {
+          "name": "transactions_idempotency_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "idempotency_key"
+          ]
+        },
+        "transactions_transaction_id_unique": {
+          "name": "transactions_transaction_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "transaction_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
+    "public.outboxStatus": {
+      "name": "outboxStatus",
+      "schema": "public",
+      "values": [
+        "DBCOMPLETE",
+        "BROKERCOMPLETE"
+      ]
+    },
     "public.routingQueue": {
       "name": "routingQueue",
       "schema": "public",
@@ -183,7 +312,21 @@
         "1",
         "2",
         "3",
-        "5"
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    "public.transaction_status": {
+      "name": "transaction_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "SUCCESS",
+        "FAILED",
+        "REVERSED",
+        "CANCELLED"
       ]
     }
   },
